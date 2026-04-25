@@ -1,0 +1,57 @@
+# Lightweight docker-compose for development (no LLM, mock predictions)
+# Usage: docker-compose -f docker-compose.dev.yml up --build
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:16-alpine
+    container_name: skin_disease_db_dev
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: skin_disease_db
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # FastAPI Backend (Development Mode)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: skin_disease_backend_dev
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/skin_disease_db
+      - DEBUG=true
+      - LLM_PROVIDER=huggingface
+      # Use smaller model or API-based for dev
+      - HF_MODEL_NAME=meta-llama/Llama-3.2-1B-Instruct
+    volumes:
+      - ./backend:/app
+      - ./backend/ml/model_weights:/app/ml/model_weights
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # Streamlit Frontend (Development Mode)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: skin_disease_frontend_dev
+    environment:
+      - API_URL=http://backend:8000
+    volumes:
+      - ./frontend:/app
+    ports:
+      - "8501:8501"
+    depends_on:
+      - backend
+    command: streamlit run app.py --server.port=8501 --server.address=0.0.0.0 --server.runOnSave=true
