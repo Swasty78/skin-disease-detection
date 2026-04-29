@@ -35,7 +35,7 @@ services:
       - MODEL_PATH=ml/model_weights/efficientnet_skin_disease.keras
       # LLM Configuration - using Gemini API (fast, free tier available)
       - LLM_PROVIDER=${LLM_PROVIDER:-gemini}
-      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-AIzaSyDH6qtGiz_tLX-qi59S4LNPck9t1SGL4Ts}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
       # Alternative: OpenAI
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
     volumes:
